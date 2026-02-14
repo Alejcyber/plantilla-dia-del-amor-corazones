@@ -1,3 +1,7 @@
+
+## Prompt usado para crear la pagina web
+
+
 Actúa como un desarrollador frontend experto.
 
 Genera una landing page romántica futurista con efecto 3D usando HTML, CSS y JavaScript en un solo archivo.
