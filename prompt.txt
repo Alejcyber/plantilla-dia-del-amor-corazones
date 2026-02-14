@@ -1,0 +1,27 @@
+Actúa como un desarrollador frontend experto.
+
+Genera una landing page romántica futurista con efecto 3D usando HTML, CSS y JavaScript en un solo archivo.
+
+Debe incluir:
+
+Fondo oscuro con efecto glow
+
+Corazón 3D animado con iluminación (puede usar Three.js CDN)
+
+Animación interactiva al mover el mouse o tocar la pantalla
+
+Texto principal elegante con animación de entrada
+
+Botón con efecto neón y microanimación
+
+Pequeño efecto de partículas románticas
+
+Totalmente responsive
+
+Estética moderna tipo web premium
+
+Texto principal que diga: “Feliz Día del Amor”
+
+Subtítulo editable
+
+El código debe ser visualmente impactante y listo para publicar.

@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feliz Día del Amor | Pastel Edition</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;400;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary-pink: #ffb7c5;
+            --dark-pink: #ff4d6d;
+            --accent-pink: #ff8fa3;
+            --bg-pastel: #fff0f3;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-pastel);
+            color: var(--dark-pink);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden;
+            cursor: default;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .overlay {
+            position: relative;
+            z-index: 10;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .content-box {
+            pointer-events: auto;
+            padding: 2.5rem;
+            border-radius: 30px;
+            backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.4);
+            border: 2px solid rgba(255, 183, 197, 0.5);
+            box-shadow: 0 20px 40px rgba(255, 143, 163, 0.2);
+            max-width: 90%;
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .content-box:hover {
+            transform: translateY(-5px);
+        }
+
+        .title {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            background: linear-gradient(to bottom, #ff4d6d, #c9184a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        .subtitle {
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            letter-spacing: 0.1em;
+            color: #ff758f;
+            margin-bottom: 2.5rem;
+            opacity: 0;
+            animation: fadeInUp 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s forwards;
+        }
+
+        .cta-button {
+            position: relative;
+            padding: 1rem 3rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: white;
+            background: var(--dark-pink);
+            border: none;
+            border-radius: 50px;
+            box-shadow: 0 10px 20px rgba(255, 77, 109, 0.3);
+            transition: all 0.4s ease;
+            opacity: 0;
+            animation: fadeInUp 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.6s forwards;
+            cursor: pointer;
+        }
+
+        .cta-button:hover {
+            background: #c9184a;
+            box-shadow: 0 15px 30px rgba(255, 77, 109, 0.5);
+            transform: scale(1.05);
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-pastel);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s ease;
+        }
+
+        .heart-loader {
+            width: 50px;
+            height: 50px;
+            background: var(--dark-pink);
+            position: relative;
+            transform: rotate(45deg);
+            animation: pulse 1s infinite alternate;
+        }
+        .heart-loader::before, .heart-loader::after {
+            content: '';
+            width: 50px;
+            height: 50px;
+            background: var(--dark-pink);
+            border-radius: 50%;
+            position: absolute;
+        }
+        .heart-loader::before { left: -25px; }
+        .heart-loader::after { top: -25px; }
+
+        @keyframes pulse {
+            to { transform: rotate(45deg) scale(1.2); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <div class="heart-loader"></div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <main class="overlay">
+        <div class="content-box">
+            <h1 class="title">Feliz Día del Amor</h1>
+            <p class="subtitle" id="editable-subtitle">Tu amor es la energía que ilumina mi futuro</p>
+            <button class="cta-button" onclick="celebrate()">Explorar Destino</button>
+        </div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <script>
+        let scene, camera, renderer, heartMesh, heartParticles;
+        let mouseX = 0, mouseY = 0;
+        let targetX = 0, targetY = 0;
+        let isCelebrating = false;
+
+        const container = document.getElementById('canvas-container');
+
+        // Función para crear textura de corazón para las partículas
+        function createHeartTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ff4d6d';
+            ctx.beginPath();
+            ctx.moveTo(32, 20);
+            ctx.bezierCurveTo(32, 17, 28, 10, 20, 10);
+            ctx.bezierCurveTo(10, 10, 10, 22.5, 10, 22.5);
+            ctx.bezierCurveTo(10, 30, 20, 40, 32, 50);
+            ctx.bezierCurveTo(44, 40, 54, 30, 54, 22.5);
+            ctx.bezierCurveTo(54, 22.5, 54, 10, 44, 10);
+            ctx.bezierCurveTo(36, 10, 32, 17, 32, 20);
+            ctx.fill();
+            const texture = new THREE.CanvasTexture(canvas);
+            return texture;
+        }
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xfff0f3);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 5;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // Luces
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+
+            const spotLight = new THREE.SpotLight(0xffffff, 1);
+            spotLight.position.set(5, 5, 5);
+            scene.add(spotLight);
+
+            // Geometría del Corazón Central (Corregido)
+            const heartShape = new THREE.Shape();
+            const x = 0, y = 0;
+            // Dibujamos el corazón de forma que el pico esté abajo (y negativo)
+            heartShape.moveTo( x, y + 0.5 );
+            heartShape.bezierCurveTo( x + 0.5, y + 0.5, x + 1, y + 1.5, x, y + 2 ); // Mitad derecha superior
+            heartShape.bezierCurveTo( x - 1, y + 1.5, x - 0.5, y + 0.5, x, y + 0.5 ); // Mitad izquierda superior
+            // Invertimos la lógica para que el dibujo sea estándar
+            const shape = new THREE.Shape();
+            shape.moveTo( 25, 25 );
+            shape.bezierCurveTo( 25, 25, 20, 0, 0, 0 );
+            shape.bezierCurveTo( -30, 0, -30, 35, -30, 35 );
+            shape.bezierCurveTo( -30, 55, -10, 77, 25, 95 );
+            shape.bezierCurveTo( 60, 77, 80, 55, 80, 35 );
+            shape.bezierCurveTo( 80, 35, 80, 0, 50, 0 );
+            shape.bezierCurveTo( 35, 0, 25, 25, 25, 25 );
+
+            const extrudeSettings = { depth: 10, bevelEnabled: true, bevelSegments: 20, steps: 2, bevelSize: 5, bevelThickness: 5 };
+            const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+            geometry.center();
+            geometry.rotateX(Math.PI); // Corregir orientación
+            geometry.scale(0.02, 0.02, 0.02);
+
+            const material = new THREE.MeshPhongMaterial({
+                color: 0xff4d6d,
+                shininess: 100,
+                specular: 0xffffff
+            });
+
+            heartMesh = new THREE.Mesh(geometry, material);
+            scene.add(heartMesh);
+
+            // Lluvia de Corazones (Partículas)
+            const count = 500;
+            const pGeometry = new THREE.BufferGeometry();
+            const pPositions = new Float32Array(count * 3);
+            const pVelocities = new Float32Array(count);
+
+            for (let i = 0; i < count; i++) {
+                pPositions[i * 3] = (Math.random() - 0.5) * 15; // X
+                pPositions[i * 3 + 1] = Math.random() * 20 - 10; // Y
+                pPositions[i * 3 + 2] = (Math.random() - 0.5) * 10; // Z
+                pVelocities[i] = 0.02 + Math.random() * 0.05;
+            }
+
+            pGeometry.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
+            
+            const pMaterial = new THREE.PointsMaterial({
+                size: 0.5,
+                map: createHeartTexture(),
+                transparent: true,
+                alphaTest: 0.5,
+                color: 0xff8fa3
+            });
+
+            heartParticles = new THREE.Points(pGeometry, pMaterial);
+            heartParticles.userData.velocities = pVelocities;
+            scene.add(heartParticles);
+
+            // Eventos
+            window.addEventListener('resize', onWindowResize);
+            document.addEventListener('mousemove', (e) => {
+                targetX = (e.clientX - window.innerWidth / 2) / 100;
+                targetY = (e.clientY - window.innerHeight / 2) / 100;
+            });
+
+            // Quitar loader
+            setTimeout(() => {
+                document.getElementById('loader').style.opacity = '0';
+                setTimeout(() => document.getElementById('loader').remove(), 800);
+            }, 1000);
+
+            animate();
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Interacción suave
+            mouseX += (targetX - mouseX) * 0.05;
+            mouseY += (targetY - mouseY) * 0.05;
+
+            // Animación Corazón Central
+            if (heartMesh) {
+                heartMesh.rotation.y += 0.01;
+                heartMesh.rotation.z = mouseX * 0.1;
+                const time = Date.now() * 0.002;
+                const pulse = 1 + Math.sin(time * 3) * 0.05;
+                heartMesh.scale.set(pulse, pulse, pulse);
+            }
+
+            // Animación Lluvia de Corazones
+            const positions = heartParticles.geometry.attributes.position.array;
+            const velocities = heartParticles.userData.velocities;
+            
+            for (let i = 0; i < positions.length / 3; i++) {
+                // Velocidad base + incremento si hay celebración
+                let speed = velocities[i] * (isCelebrating ? 5 : 1);
+                positions[i * 3 + 1] -= speed;
+
+                // Resetear si salen por abajo
+                if (positions[i * 3 + 1] < -10) {
+                    positions[i * 3 + 1] = 10;
+                    positions[i * 3] = (Math.random() - 0.5) * 15;
+                }
+            }
+            heartParticles.geometry.attributes.position.needsUpdate = true;
+
+            renderer.render(scene, camera);
+        }
+
+        function celebrate() {
+            isCelebrating = true;
+            
+            // Animación del texto
+            const subtitle = document.getElementById('editable-subtitle');
+            subtitle.innerText = "¡Lluvia de amor para ti!";
+            
+            gsap.to(heartMesh.scale, { x: 2.5, y: 2.5, z: 2.5, duration: 0.5, ease: "back.out" });
+            gsap.to(heartParticles.material, { size: 1.2, duration: 0.5 });
+
+            // Volver a la normalidad tras unos segundos
+            setTimeout(() => {
+                isCelebrating = false;
+                gsap.to(heartMesh.scale, { x: 1, y: 1, z: 1, duration: 1.5, ease: "elastic.out(1, 0.3)" });
+                gsap.to(heartParticles.material, { size: 0.5, duration: 1.5 });
+            }, 3000);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
